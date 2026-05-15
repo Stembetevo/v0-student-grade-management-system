@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Students - Student Grade Management{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold">Students</h2>
+        <button class="btn-primary" onclick="openAddStudentModal()">+ Add Student</button>
+    </div>
+    
+    <!-- Search Box -->
+    <div class="mb-6">
+        <input type="text" id="searchInput" placeholder="Search by name or registration number..." 
+               style="max-width: 400px;" onkeyup="filterTable()">
+    </div>
+    
+    <!-- Students Table -->
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Registration Number</th>
+                    <th>Units</th>
+                    <th>GPA</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.registration_number }}</td>
+                    <td>{{ student.units | length }}</td>
+                    <td>
+                        <strong>{{ student.gpa }}</strong>
+                    </td>
+                    <td>
+                        <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" 
+                                onclick="editStudent('{{ student.id }}')">Edit</button>
+                        <button class="btn-danger" style="padding: 6px 12px; font-size: 12px;" 
+                                onclick="deleteStudent('{{ student.id }}')">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Student Modal -->
+<div id="studentModal" class="modal">
+    <div class="modal-content">
+        <h3 class="text-2xl font-bold mb-6" id="modalTitle">Add Student</h3>
+        <form id="studentForm" onsubmit="saveStudent(event)">
+            <div class="form-group">
+                <label for="studentName">Name</label>
+                <input type="text" id="studentName" required>
+            </div>
+            <div class="form-group">
+                <label for="regNumber">Registration Number</label>
+                <input type="text" id="regNumber" required>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Save</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModal('studentModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentStudentId = null;
+    let students = {{ students | tojson }};
+    
+    function openAddStudentModal() {
+        currentStudentId = null;
+        document.getElementById('modalTitle').textContent = 'Add Student';
+        document.getElementById('studentForm').reset();
+        document.getElementById('studentModal').classList.add('active');
+    }
+    
+    function editStudent(studentId) {
+        const student = students.find(s => s.id === studentId);
+        if (student) {
+            currentStudentId = studentId;
+            document.getElementById('modalTitle').textContent = 'Edit Student';
+            document.getElementById('studentName').value = student.name;
+            document.getElementById('regNumber').value = student.registration_number;
+            document.getElementById('studentModal').classList.add('active');
+        }
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+    
+    function saveStudent(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('studentName').value;
+        const regNumber = document.getElementById('regNumber').value;
+        
+        if (currentStudentId) {
+            // Update existing student
+            fetch(`/api/students/${currentStudentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    registration_number: regNumber
+                })
+            }).then(r => r.json()).then(() => {
+                location.reload();
+            });
+        } else {
+            // Add new student
+            fetch('/api/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    registration_number: regNumber,
+                    units: []
+                })
+            }).then(r => r.json()).then(() => {
+                location.reload();
+            });
+        }
+    }
+    
+    function deleteStudent(studentId) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            fetch(`/api/students/${studentId}`, { method: 'DELETE' })
+                .then(() => location.reload());
+        }
+    }
+    
+    function filterTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase();
+        const table = document.getElementById('studentsTableBody');
+        const rows = table.getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            const name = row.cells[0].textContent.toLowerCase();
+            const regNum = row.cells[1].textContent.toLowerCase();
+            
+            if (name.includes(input) || regNum.includes(input)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+</script>
+{% endblock %}

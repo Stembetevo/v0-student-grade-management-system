@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Student Grade Management{% endblock %}
+
+{% block content %}
+<div>
+    <h2 class="text-3xl font-bold mb-8">Dashboard</h2>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card">
+            <p class="text-gray-600 text-sm mb-2">Total Students</p>
+            <p class="text-4xl font-bold" style="color: var(--primary);">{{ stats.total_students }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-gray-600 text-sm mb-2">Class Average GPA</p>
+            <p class="text-4xl font-bold" style="color: var(--primary);">{{ stats.class_average_gpa }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-gray-600 text-sm mb-2">Pass Rate</p>
+            <p class="text-4xl font-bold" style="color: var(--primary);">{{ stats.pass_rate }}%</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-gray-600 text-sm mb-2">Highest Grade</p>
+            <p class="text-4xl font-bold" style="color: var(--primary);">A</p>
+        </div>
+    </div>
+    
+    <!-- Grade Distribution Chart -->
+    <div class="stat-card">
+        <h3 class="text-xl font-bold mb-4">Grade Distribution</h3>
+        <canvas id="gradeChart"></canvas>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const stats = {{ stats | tojson }};
+    
+    const ctx = document.getElementById('gradeChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['A', 'B', 'C', 'D', 'F'],
+            datasets: [{
+                label: 'Number of Grades',
+                data: [
+                    stats.grade_distribution.A,
+                    stats.grade_distribution.B,
+                    stats.grade_distribution.C,
+                    stats.grade_distribution.D,
+                    stats.grade_distribution.F
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#17a2b8',
+                    '#ffc107',
+                    '#fd7e14',
+                    '#dc3545'
+                ],
+                borderColor: [
+                    '#1e7e34',
+                    '#0c5460',
+                    '#cc8800',
+                    '#cc5c00',
+                    '#721c24'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

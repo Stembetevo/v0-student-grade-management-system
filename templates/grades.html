@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Grades - Student Grade Management{% endblock %}
+
+{% block content %}
+<div>
+    <h2 class="text-3xl font-bold mb-8">Enter Grades</h2>
+    
+    <!-- Student Selector -->
+    <div class="stat-card mb-8">
+        <div class="form-group">
+            <label for="studentSelect">Select Student</label>
+            <select id="studentSelect" onchange="loadStudentGrades()">
+                <option value="">Choose a student...</option>
+                {% for student in students %}
+                <option value="{{ student.id }}">{{ student.name }} ({{ student.registration_number }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <!-- Grades Form -->
+    <div id="gradesContainer" style="display: none;">
+        <div class="stat-card">
+            <h3 class="text-2xl font-bold mb-6">Units and Marks</h3>
+            <div id="unitsContainer"></div>
+            <button class="btn-primary" onclick="addUnitField()" style="margin-top: 15px;">+ Add Unit</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Unit Modal -->
+<div id="unitModal" class="modal">
+    <div class="modal-content">
+        <h3 class="text-2xl font-bold mb-6">Enter Unit Mark</h3>
+        <form id="unitForm" onsubmit="saveUnit(event)">
+            <div class="form-group">
+                <label for="unitName">Unit Name</label>
+                <input type="text" id="unitName" required>
+            </div>
+            <div class="form-group">
+                <label for="unitMarks">Marks (0-100)</label>
+                <input type="number" id="unitMarks" min="0" max="100" required>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Save</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModal('unitModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentStudentId = null;
+    let currentUnitIndex = null;
+    let students = {{ students | tojson }};
+    
+    const defaultUnits = ['Mathematics', 'Physics', 'Chemistry', 'Biology'];
+    
+    function loadStudentGrades() {
+        currentStudentId = document.getElementById('studentSelect').value;
+        
+        if (!currentStudentId) {
+            document.getElementById('gradesContainer').style.display = 'none';
+            return;
+        }
+        
+        const student = students.find(s => s.id === currentStudentId);
+        document.getElementById('gradesContainer').style.display = 'block';
+        
+        const container = document.getElementById('unitsContainer');
+        container.innerHTML = '';
+        
+        if (student.units && student.units.length > 0) {
+            student.units.forEach((unit, index) => {
+                const unitDiv = document.createElement('div');
+                unitDiv.className = 'form-group';
+                unitDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong>${unit.name}</strong>
+                        <div style="display: flex; gap: 10px;">
+                            <span class="grade-badge grade-${unit.grade.toLowerCase()}">${unit.grade} (${unit.marks})</span>
+                            <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 12px;" 
+                                    onclick="editUnit(${index})">Edit</button>
+                            <button type="button" class="btn-danger" style="padding: 4px 8px; font-size: 12px;" 
+                                    onclick="deleteUnit(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(unitDiv);
+            });
+        } else {
+            container.innerHTML = '<p class="text-gray-600">No units added yet.</p>';
+        }
+    }
+    
+    function addUnitField() {
+        if (!currentStudentId) {
+            alert('Please select a student first');
+            return;
+        }
+        
+        currentUnitIndex = null;
+        document.getElementById('modalTitle') = 'Add Unit';
+        document.getElementById('unitForm').reset();
+        document.getElementById('unitModal').classList.add('active');
+    }
+    
+    function editUnit(index) {
+        currentUnitIndex = index;
+        const student = students.find(s => s.id === currentStudentId);
+        const unit = student.units[index];
+        
+        document.getElementById('unitName').value = unit.name;
+        document.getElementById('unitMarks').value = unit.marks;
+        document.getElementById('unitModal').classList.add('active');
+    }
+    
+    function deleteUnit(index) {
+        if (confirm('Delete this unit?')) {
+            fetch(`/api/students/${currentStudentId}/units`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: students.find(s => s.id === currentStudentId).units[index].name,
+                    marks: -1  // Special indicator to delete
+                })
+            }).then(r => r.json()).then(data => {
+                // Refresh local data
+                const studentIdx = students.findIndex(s => s.id === currentStudentId);
+                students[studentIdx] = data;
+                loadStudentGrades();
+            });
+        }
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+    
+    function saveUnit(event) {
+        event.preventDefault();
+        
+        const unitName = document.getElementById('unitName').value;
+        const marks = parseInt(document.getElementById('unitMarks').value);
+        
+        fetch(`/api/students/${currentStudentId}/units`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: unitName,
+                marks: marks
+            })
+        }).then(r => r.json()).then(data => {
+            const studentIdx = students.findIndex(s => s.id === currentStudentId);
+            students[studentIdx] = data;
+            loadStudentGrades();
+            closeModal('unitModal');
+        });
+    }
+</script>
+{% endblock %}

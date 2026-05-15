@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Student Grade Management{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold">Academic Transcripts</h2>
+        <button class="btn-primary" onclick="window.print()" style="display: print;">🖨️ Print</button>
+    </div>
+    
+    <!-- Student Selector -->
+    <div class="stat-card mb-8">
+        <div class="form-group">
+            <label for="reportStudentSelect">Select Student</label>
+            <select id="reportStudentSelect" onchange="generateReport()">
+                <option value="">Choose a student...</option>
+                {% for student in students %}
+                <option value="{{ student.id }}">{{ student.name }} ({{ student.registration_number }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <!-- Report Container -->
+    <div id="reportContainer" style="display: none;">
+        <div class="stat-card" style="background-color: var(--white); border: 2px solid var(--gray-medium);">
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--gray-medium); padding-bottom: 20px;">
+                <h1 class="text-2xl font-bold">ACADEMIC TRANSCRIPT</h1>
+                <p class="text-gray-600 mt-2">Student Grade Report</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <strong>Student Name:</strong> <span id="reportName"></span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Registration Number:</strong> <span id="reportRegNum"></span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Cumulative GPA:</strong> <span id="reportGPA" class="text-xl font-bold"></span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Total Units:</strong> <span id="reportUnitsCount"></span>
+                </div>
+            </div>
+            
+            <hr style="margin: 30px 0;">
+            
+            <h3 class="text-xl font-bold mb-6">Unit Details</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Unit Name</th>
+                            <th>Marks</th>
+                            <th>Grade</th>
+                            <th>GPA Points</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--gray-medium);">
+                <p class="text-sm text-gray-600">
+                    <strong>Grading Scale:</strong> A (70-100) | B (60-69) | C (50-59) | D (40-49) | F (0-39)
+                </p>
+                <p class="text-sm text-gray-600" style="margin-top: 10px;">
+                    <strong>GPA Scale:</strong> A (4.0) | B (3.0) | C (2.0) | D (1.0) | F (0.0)
+                </p>
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center; color: var(--gray-medium);">
+                <p class="text-sm">Generated on <span id="reportDate"></span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let students = {{ students | tojson }};
+    
+    function generateReport() {
+        const studentId = document.getElementById('reportStudentSelect').value;
+        
+        if (!studentId) {
+            document.getElementById('reportContainer').style.display = 'none';
+            return;
+        }
+        
+        const student = students.find(s => s.id === studentId);
+        if (!student) return;
+        
+        document.getElementById('reportContainer').style.display = 'block';
+        document.getElementById('reportName').textContent = student.name;
+        document.getElementById('reportRegNum').textContent = student.registration_number;
+        document.getElementById('reportGPA').textContent = student.gpa || 0;
+        document.getElementById('reportUnitsCount').textContent = (student.units || []).length;
+        
+        const today = new Date();
+        document.getElementById('reportDate').textContent = today.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        const tableBody = document.getElementById('reportTableBody');
+        tableBody.innerHTML = '';
+        
+        if (student.units && student.units.length > 0) {
+            student.units.forEach(unit => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${unit.name}</td>
+                    <td>${unit.marks}</td>
+                    <td>
+                        <span class="grade-badge grade-${unit.grade.toLowerCase()}">
+                            ${unit.grade}
+                        </span>
+                    </td>
+                    <td>${unit.gpa_points}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="4" style="text-align: center; color: var(--gray-medium);">No units recorded</td>';
+            tableBody.appendChild(row);
+        }
+    }
+</script>
+{% endblock %}
