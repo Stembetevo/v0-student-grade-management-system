@@ -1,0 +1,164 @@
+{
+  "students": [
+    {
+      "id": "1",
+      "name": "Alice Johnson",
+      "registration_number": "STU001",
+      "units": [
+        {
+          "name": "Mathematics",
+          "marks": 85,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Physics",
+          "marks": 78,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Chemistry",
+          "marks": 92,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Biology",
+          "marks": 88,
+          "grade": "A",
+          "gpa_points": 4.0
+        }
+      ],
+      "gpa": 4.0
+    },
+    {
+      "id": "2",
+      "name": "Bob Smith",
+      "registration_number": "STU002",
+      "units": [
+        {
+          "name": "Mathematics",
+          "marks": 72,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Physics",
+          "marks": 65,
+          "grade": "B",
+          "gpa_points": 3.0
+        },
+        {
+          "name": "Chemistry",
+          "marks": 68,
+          "grade": "B",
+          "gpa_points": 3.0
+        },
+        {
+          "name": "Biology",
+          "marks": 74,
+          "grade": "A",
+          "gpa_points": 4.0
+        }
+      ],
+      "gpa": 3.5
+    },
+    {
+      "id": "3",
+      "name": "Carol Davis",
+      "registration_number": "STU003",
+      "units": [
+        {
+          "name": "Mathematics",
+          "marks": 58,
+          "grade": "C",
+          "gpa_points": 2.0
+        },
+        {
+          "name": "Physics",
+          "marks": 62,
+          "grade": "B",
+          "gpa_points": 3.0
+        },
+        {
+          "name": "Chemistry",
+          "marks": 55,
+          "grade": "C",
+          "gpa_points": 2.0
+        },
+        {
+          "name": "Biology",
+          "marks": 60,
+          "grade": "B",
+          "gpa_points": 3.0
+        }
+      ],
+      "gpa": 2.5
+    },
+    {
+      "id": "4",
+      "name": "David Wilson",
+      "registration_number": "STU004",
+      "units": [
+        {
+          "name": "Mathematics",
+          "marks": 45,
+          "grade": "D",
+          "gpa_points": 1.0
+        },
+        {
+          "name": "Physics",
+          "marks": 52,
+          "grade": "C",
+          "gpa_points": 2.0
+        },
+        {
+          "name": "Chemistry",
+          "marks": 48,
+          "grade": "D",
+          "gpa_points": 1.0
+        },
+        {
+          "name": "Biology",
+          "marks": 50,
+          "grade": "C",
+          "gpa_points": 2.0
+        }
+      ],
+      "gpa": 1.5
+    },
+    {
+      "id": "5",
+      "name": "Eve Martinez",
+      "registration_number": "STU005",
+      "units": [
+        {
+          "name": "Mathematics",
+          "marks": 90,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Physics",
+          "marks": 84,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Chemistry",
+          "marks": 87,
+          "grade": "A",
+          "gpa_points": 4.0
+        },
+        {
+          "name": "Biology",
+          "marks": 95,
+          "grade": "A",
+          "gpa_points": 4.0
+        }
+      ],
+      "gpa": 4.0
+    }
+  ]
+}
