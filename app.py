@@ -96,6 +96,12 @@ def grades():
     data = load_data()
     return render_template('grades.html', students=data['students'])
 
+@app.route('/units')
+def units():
+    """Units and marks entry page"""
+    data = load_data()
+    return render_template('units_marks.html', students=data['students'])
+
 @app.route('/reports')
 def reports():
     """Reports page"""
@@ -141,37 +147,58 @@ def api_student(student_id):
         save_data(data)
         return '', 204
 
-@app.route('/api/students/<student_id>/units', methods=['POST'])
-def add_unit(student_id):
-    """Add or update unit marks for a student"""
+@app.route('/api/students/<student_id>/units', methods=['POST', 'DELETE'])
+def manage_units(student_id):
+    """Add, update, or delete unit marks for a student"""
     data = load_data()
     student = next((s for s in data['students'] if s['id'] == student_id), None)
     
     if not student:
         return jsonify({'error': 'Student not found'}), 404
     
-    unit_data = request.json
-    marks = unit_data.get('marks', 0)
-    
+    unit_data = request.json or {}
+    unit_name = (unit_data.get('name') or '').strip()
+
+    if not unit_name:
+        return jsonify({'error': 'Unit name is required'}), 400
+
+    if 'units' not in student:
+        student['units'] = []
+
+    # Allow deletion by DELETE method, and keep backward compatibility
+    # with older clients sending marks < 0 via POST.
+    if request.method == 'DELETE' or unit_data.get('marks', 0) < 0:
+        existing_unit = next((u for u in student['units'] if u.get('name') == unit_name), None)
+        if not existing_unit:
+            return jsonify({'error': 'Unit not found'}), 404
+        student['units'].remove(existing_unit)
+        student['gpa'] = calculate_student_gpa(student.get('units', []))
+        save_data(data)
+        return jsonify(student)
+
+    marks = unit_data.get('marks')
+    if not isinstance(marks, (int, float)):
+        return jsonify({'error': 'Marks must be a number'}), 400
+
+    marks = int(marks)
+    if marks < 0 or marks > 100:
+        return jsonify({'error': 'Marks must be between 0 and 100'}), 400
+
     unit = {
-        'name': unit_data.get('name'),
+        'name': unit_name,
         'marks': marks,
         'grade': calculate_grade(marks),
         'gpa_points': calculate_gpa_points(marks)
     }
-    
-    # Update or add unit
-    existing_unit = next((u for u in student.get('units', []) if u['name'] == unit['name']), None)
+
+    existing_unit = next((u for u in student['units'] if u.get('name') == unit_name), None)
     if existing_unit:
         existing_unit.update(unit)
     else:
-        if 'units' not in student:
-            student['units'] = []
         student['units'].append(unit)
-    
-    # Recalculate GPA
+
     student['gpa'] = calculate_student_gpa(student.get('units', []))
-    
+
     save_data(data)
     return jsonify(student)
 

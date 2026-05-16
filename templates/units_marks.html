@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Units & Marks - Student Grade Management{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold">Units & Marks</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card md:col-span-1">
+            <h3 class="text-xl font-bold mb-4">Select Student</h3>
+            <div class="form-group">
+                <label for="studentSelect">Student</label>
+                <select id="studentSelect" onchange="loadStudentUnits()">
+                    <option value="">Choose a student...</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}">{{ student.name }} ({{ student.registration_number }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="quickStats" style="display: none; margin-top: 16px;">
+                <p><strong>Current GPA:</strong> <span id="studentGPA">0.0</span></p>
+                <p><strong>Total Units:</strong> <span id="studentUnitsCount">0</span></p>
+            </div>
+        </div>
+
+        <div class="stat-card md:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Recorded Units</h3>
+                <button class="btn-primary" onclick="openUnitModal()">+ Add Unit</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Unit Name</th>
+                            <th>Marks</th>
+                            <th>Grade</th>
+                            <th>GPA Points</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unitsTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #6c757d;">Select a student to manage units</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="unitModal" class="modal">
+    <div class="modal-content">
+        <h3 class="text-2xl font-bold mb-6" id="unitModalTitle">Add Unit & Mark</h3>
+        <form id="unitForm" onsubmit="saveUnit(event)">
+            <div class="form-group">
+                <label for="unitName">Unit Name</label>
+                <input type="text" id="unitName" required>
+            </div>
+            <div class="form-group">
+                <label for="unitMarks">Marks (0-100)</label>
+                <input type="number" id="unitMarks" min="0" max="100" required>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Save</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModal('unitModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    let students = {{ students | tojson }};
+    let selectedStudentId = null;
+    let editingUnitName = null;
+
+    function getSelectedStudent() {
+        return students.find(s => String(s.id) === String(selectedStudentId));
+    }
+
+    function loadStudentUnits() {
+        selectedStudentId = document.getElementById('studentSelect').value;
+        const tbody = document.getElementById('unitsTableBody');
+        const quickStats = document.getElementById('quickStats');
+
+        if (!selectedStudentId) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">Select a student to manage units</td></tr>';
+            quickStats.style.display = 'none';
+            return;
+        }
+
+        const student = getSelectedStudent();
+        if (!student) return;
+
+        quickStats.style.display = 'block';
+        document.getElementById('studentGPA').textContent = student.gpa || 0;
+        document.getElementById('studentUnitsCount').textContent = (student.units || []).length;
+
+        renderUnitsTable(student.units || []);
+    }
+
+    function renderUnitsTable(units) {
+        const tbody = document.getElementById('unitsTableBody');
+
+        if (!units.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">No units recorded for this student</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = units.map(unit => `
+            <tr>
+                <td>${unit.name}</td>
+                <td>${unit.marks}</td>
+                <td><span class="grade-badge grade-${String(unit.grade || 'F').toLowerCase()}">${unit.grade}</span></td>
+                <td>${unit.gpa_points}</td>
+                <td>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editUnit('${escapeApostrophe(unit.name)}', ${unit.marks})">Edit</button>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteUnit('${escapeApostrophe(unit.name)}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function escapeApostrophe(value) {
+        return String(value).replace(/'/g, "\\'");
+    }
+
+    function openUnitModal() {
+        if (!selectedStudentId) {
+            alert('Please select a student first.');
+            return;
+        }
+
+        editingUnitName = null;
+        document.getElementById('unitModalTitle').textContent = 'Add Unit & Mark';
+        document.getElementById('unitForm').reset();
+        document.getElementById('unitModal').classList.add('active');
+    }
+
+    function editUnit(unitName, marks) {
+        editingUnitName = unitName;
+        document.getElementById('unitModalTitle').textContent = 'Edit Unit & Mark';
+        document.getElementById('unitName').value = unitName;
+        document.getElementById('unitMarks').value = marks;
+        document.getElementById('unitModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function saveUnit(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('unitName').value.trim();
+        const marks = parseInt(document.getElementById('unitMarks').value, 10);
+
+        if (!name) {
+            alert('Unit name is required.');
+            return;
+        }
+
+        if (Number.isNaN(marks) || marks < 0 || marks > 100) {
+            alert('Marks must be a number between 0 and 100.');
+            return;
+        }
+
+        fetch(`/api/students/${selectedStudentId}/units`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, marks })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) return alert(data.error);
+
+            const index = students.findIndex(s => String(s.id) === String(selectedStudentId));
+            if (index !== -1) students[index] = data;
+            loadStudentUnits();
+            closeModal('unitModal');
+        });
+    }
+
+    function deleteUnit(unitName) {
+        if (!selectedStudentId) return;
+        if (!confirm(`Delete ${unitName}?`)) return;
+
+        fetch(`/api/students/${selectedStudentId}/units`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: unitName })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) return alert(data.error);
+
+            const index = students.findIndex(s => String(s.id) === String(selectedStudentId));
+            if (index !== -1) students[index] = data;
+            loadStudentUnits();
+        });
+    }
+
+    // expose only what inline onclick/onchange needs
+    window.loadStudentUnits = loadStudentUnits;
+    window.openUnitModal = openUnitModal;
+    window.editUnit = editUnit;
+    window.closeModal = closeModal;
+    window.saveUnit = saveUnit;
+    window.deleteUnit = deleteUnit;
+})();
+</script>
+{% endblock %}

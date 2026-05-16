@@ -159,6 +159,20 @@
         }
       ],
       "gpa": 4.0
+    },
+    {
+      "name": "Kevin Fuchs",
+      "registration_number": "D54/4566/2003",
+      "units": [
+        {
+          "name": "Physics",
+          "marks": 78,
+          "grade": "A",
+          "gpa_points": 4.0
+        }
+      ],
+      "id": "6",
+      "gpa": 4.0
     }
   ]
 }
