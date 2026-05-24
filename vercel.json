@@ -1,4 +1,4 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "node .v0/inject-built-with-v0.mjs && next build"
+  "buildCommand": "node .v0/inject-built-with-v0.mjs && pnpm run build"
 }
